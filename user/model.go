@@ -8,5 +8,9 @@ type User struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time
-	FullName  string `json:full_name`
+	FullName  string `json:fullname`
+}
+
+type ErrorResponse struct {
+	Message string `json:message`
 }
