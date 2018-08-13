@@ -49,7 +49,7 @@ func (u *UserHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if u.DB.Where("id = ?", id).First(&user).RecordNotFound() {
+	if u.DB.First(&user, id).RecordNotFound() {
 		w.WriteHeader(422)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "Record not found"})
 		return
@@ -68,7 +68,7 @@ func (u *UserHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if u.DB.Where("id = ?", id).First(&user).RecordNotFound() {
+	if u.DB.First(&user, id).RecordNotFound() {
 		w.WriteHeader(422)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "Record not found"})
 		return
