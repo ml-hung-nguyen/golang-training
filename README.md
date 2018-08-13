@@ -1,2 +1,2 @@
 # golang-training
-Exercise
+Exercise 1
