@@ -1,0 +1,13 @@
+- Viết 1 phần backend, bao gồm các api:
+1 Register User: /user/register
+2 Update thông tin user: password, fullname, ...: /user/update
+3 Xem thông tin user: /user/{id_user}
+
+- Api bao gồm:
++ route
++ http server
++ phần xử lý (handler): nhận request và trả về response dạng json (sử dụng json package - struct - json tag)
++ connect postgresql: file database như trên
+
+
+-> tạo branch có dạng : {tên}_baitap_ngay1 -> tạo Pull Request vào nhánh baitap_ngay1
