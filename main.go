@@ -12,11 +12,14 @@ func main() {
 	db := ConnectDB()
 	defer db.Close()
 
-	user := user.UserHandler{DB: db}
+	u := user.UserHandler{
+		DB:   db,
+		User: &user.User{},
+	}
 
 	r := chi.NewRouter()
-	r.Post("/user/register", user.RegisterHandler)
-	r.Get("/user/{id}", user.GetHandler)
-	r.Put("/user/{id}", user.UpdateHandler)
+	r.Post("/user/register", u.RegisterHandler)
+	r.Get("/user/{id}", u.GetHandler)
+	r.Put("/user/{id}", u.UpdateHandler)
 	log.Fatal(http.ListenAndServe(":1709", r))
 }

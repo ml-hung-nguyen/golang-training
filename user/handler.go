@@ -12,46 +12,51 @@ import (
 )
 
 type UserHandler struct {
-	DB *gorm.DB
+	DB   *gorm.DB
+	User UserInterface
 }
 
 func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	var user User
+	user := u.User
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if len(body) < 1 {
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "No body"})
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
 	err = json.Unmarshal(body, &user)
+	if err != nil {
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	fmt.Println(user)
-	if u.DB.NewRecord(user) {
-		u.DB.Create(&user)
-		fmt.Println("Created")
+	err = user.Create(u.DB)
+	if err != nil {
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
 	}
 	json.NewEncoder(w).Encode(user)
 	return
 }
 
 func (u *UserHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
-	var user User
-	id := chi.URLParam(r, "id")
-	_, err := strconv.Atoi(id)
+	user := u.User
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid ID"})
 		return
 	}
-
-	if u.DB.First(&user, id).RecordNotFound() {
-		w.WriteHeader(422)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Record not found"})
+	err = user.Find(id, u.DB)
+	if err != nil {
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 	json.NewEncoder(w).Encode(user)
@@ -59,42 +64,46 @@ func (u *UserHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UserHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
-	var user, updateUser User
-	id := chi.URLParam(r, "id")
-	_, err := strconv.Atoi(id)
+	var updateUser User
+	user := u.User
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid ID"})
 		return
 	}
 
-	if u.DB.First(&user, id).RecordNotFound() {
-		w.WriteHeader(422)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Record not found"})
+	err = user.Find(id, u.DB)
+	if err != nil {
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if len(body) < 1 {
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "No body"})
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	err = json.Unmarshal(body, &updateUser)
 	if err != nil {
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid json"})
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	u.DB.Model(&user).Updates(&updateUser)
-
+	err = user.Update(&updateUser, u.DB)
+	if err != nil {
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
 	json.NewEncoder(w).Encode(user)
 	return
 }
