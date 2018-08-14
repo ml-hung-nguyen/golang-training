@@ -11,3 +11,6 @@
 
 
 -> tạo branch có dạng : {tên}_baitap_ngay1 -> tạo Pull Request vào nhánh baitap_ngay1
+
+- Ngày 2:
++ Tạo middleware cho các method get, update thông tin
