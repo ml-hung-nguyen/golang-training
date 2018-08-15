@@ -37,12 +37,14 @@ func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &request)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 
 	password, err := bcrypt.GenerateFromPassword([]byte(request.Password), 14)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -53,6 +55,7 @@ func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = u.User.Create(&user, u.DB)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -60,11 +63,13 @@ func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	response := UserResponse{}
 	data, err := json.Marshal(&user)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 	err = json.Unmarshal(data, &response)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -84,17 +89,20 @@ func (u *UserHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = user.Find(id, u.DB)
 	if err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 	data, err := json.Marshal(&user)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 	response := UserResponse{}
 	err = json.Unmarshal(data, &response)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -123,7 +131,7 @@ func (u *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	find := u.DB.Where("username = ?", request.Username).First(&user)
 	if find.RecordNotFound() {
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "No record"})
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 	fmt.Println(request.Password, user.Password)
@@ -154,6 +162,7 @@ func (u *UserHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := user.Find(user.ID, u.DB)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -179,17 +188,20 @@ func (u *UserHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = u.User.Update(&user, &updateUser, u.DB)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 	data, err := json.Marshal(&user)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 	response := UserResponse{}
 	err = json.Unmarshal(data, &response)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}

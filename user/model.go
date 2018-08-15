@@ -31,7 +31,7 @@ type UserRequest struct {
 	ID       int    `json:"id" form:"id"`
 	Username string `json:"username" form:"username" validate:"required,unique"`
 	Password string `json:"password" form:"password"`
-	FullName string `json:"fullname" form:"password"`
+	FullName string `json:"fullname" form:"fullname"`
 }
 
 type UserResponse struct {
