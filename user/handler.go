@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/form"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
+	validator "gopkg.in/go-playground/validator.v9"
 )
 
 type UserHandler struct {
@@ -25,13 +26,13 @@ func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 	if len(body) < 1 {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "No body"})
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: "No body"})
 		return
 	}
 
@@ -116,22 +117,30 @@ func (u *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 	decoder := form.NewDecoder()
 	err = decoder.Decode(&request, r.Form)
 	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(&request)
+	if err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 
 	find := u.DB.Where("username = ?", request.Username).First(&user)
 	if find.RecordNotFound() {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "No record"})
 		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: "No record"})
 		return
 	}
 	fmt.Println(request.Password, user.Password)
@@ -143,8 +152,8 @@ func (u *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		tokenString, err := token.SignedString([]byte("somesecretcode"))
 		if err != nil {
-			json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 			return
 		}
 		json.NewEncoder(w).Encode(JwtToken{Token: tokenString})
@@ -169,21 +178,21 @@ func (u *UserHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
 
 	if len(body) < 1 {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "No body"})
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: "No body"})
 		return
 	}
 
 	err = json.Unmarshal(body, &updateUser)
 	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid json"})
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid json"})
 		return
 	}
 	err = u.User.Update(&user, &updateUser, u.DB)

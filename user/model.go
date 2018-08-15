@@ -30,7 +30,7 @@ type JwtToken struct {
 type UserRequest struct {
 	ID       int    `json:"id" form:"id"`
 	Username string `json:"username" form:"username" validate:"required,unique"`
-	Password string `json:"password" form:"password"`
+	Password string `json:"password" form:"password" validate:"required"`
 	FullName string `json:"fullname" form:"fullname"`
 }
 
