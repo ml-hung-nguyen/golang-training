@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -10,39 +11,36 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type Handler struct {
+type HandlerUser struct {
 	db   *gorm.DB
 	User UserInterface
 }
 
-func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
+func (h *HandlerUser) Detail(w http.ResponseWriter, r *http.Request) {
+	UserId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 		return
 	}
 
 	user := h.User
-	err = json.Unmarshal(body, &user)
-	err = user.Create(h.db)
+	err = user.Detail(UserId, h.db)
 	if err != nil {
-		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
 	} else {
-		respondwithJSON(w, http.StatusCreated, map[string]string{"message": "Create successfully"})
+		respondwithJSON(w, http.StatusOK, user)
 	}
-
 }
 
-func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
-	user := h.User
-	userId, err := strconv.Atoi(chi.URLParam(r, "id_user"))
+func (h *HandlerUser) Create(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
-		return
+		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 	}
-
-	err = user.Detail(userId, h.db)
-
+	user := h.User
+	err = json.Unmarshal(body, &user)
+	fmt.Println(user)
+	err = user.Create(h.db)
 	if err != nil {
 		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 	} else {
@@ -50,9 +48,9 @@ func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *HandlerUser) Update(w http.ResponseWriter, r *http.Request) {
 	user := h.User
-	id, err := strconv.Atoi(chi.URLParam(r, "id_user"))
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 	}

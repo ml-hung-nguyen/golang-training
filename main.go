@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -9,22 +10,21 @@ import (
 )
 
 var db *gorm.DB
-var router *chi.Mux
+var route *chi.Mux
 
-func routers() *chi.Mux {
-	h := Handler{db, &User{}}
-
-	router.Get("/users/{id_user}", h.Detail)
-	router.Post("/users/register", h.Create)
-	router.Put("/users/update/{id_user}", h.Update)
-
-	return router
+func router() *chi.Mux {
+	h := HandlerUser{db, &User{}}
+	route.Get("/users/{id}", h.Detail)
+	route.Post("/users/register", h.Create)
+	route.Put("/users/update/{id}", h.Update)
+	return route
 }
 
 func main() {
-	router = chi.NewRouter()
-	router.Use(middleware.Recoverer)
 	Connect()
-	routers()
-	http.ListenAndServe(":8080", router)
+	route = chi.NewRouter()
+	route.Use(middleware.Recoverer)
+	router()
+	log.Println("Starting server:")
+	http.ListenAndServe(":8888", route)
 }
