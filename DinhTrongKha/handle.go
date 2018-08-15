@@ -25,11 +25,14 @@ func (h *UserHandle) Detail(w http.ResponseWriter, r *http.Request) {
 	user := h.user
 
 	err = user.Detail(id, h.db)
-
 	if err != nil {
-		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		if err.Error() == "record not found" {
+			respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
+		} else {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
 	} else {
-		respondwithJSON(w, http.StatusCreated, user)
+		respondwithJSON(w, http.StatusOK, user)
 	}
 }
 
@@ -38,7 +41,7 @@ func (h *UserHandle) Create(w http.ResponseWriter, r *http.Request) {
 	user := h.user
 	err = json.Unmarshal(body, &user)
 	if err != nil {
-		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 		return
 	}
 
@@ -46,7 +49,7 @@ func (h *UserHandle) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 	} else {
-		respondwithJSON(w, http.StatusCreated, map[string]string{"message": "Create successfully"})
+		respondwithJSON(w, http.StatusOK, map[string]string{"message": "Create successfully"})
 	}
 }
 
@@ -61,19 +64,23 @@ func (h *UserHandle) Update(w http.ResponseWriter, r *http.Request) {
 	var userUpdate User
 	err = json.Unmarshal(body, &userUpdate)
 	if err != nil {
-		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 		return
 	}
 
 	err = user.Detail(id, h.db)
 	if err != nil {
-		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		if err.Error() == "record not found" {
+			respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
+		} else {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
 		return
 	}
 	err = user.Update(userUpdate, h.db)
 	if err != nil {
-		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 	} else {
-		respondwithJSON(w, http.StatusCreated, map[string]string{"message": "Update successfully"})
+		respondwithJSON(w, http.StatusOK, map[string]string{"message": "Update successfully"})
 	}
 }

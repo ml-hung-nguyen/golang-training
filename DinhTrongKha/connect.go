@@ -22,4 +22,5 @@ func newConnect() {
 	if err != nil {
 		panic(err)
 	}
+	// db.LogMode(true)
 }
