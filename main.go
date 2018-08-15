@@ -20,8 +20,8 @@ func main() {
 	r := chi.NewRouter()
 	fmt.Println("Starting Server")
 	r.Get("/users/{id}", h.GetUser)
-	r.Post("/users", h.CreateUser)
-	r.Put("/user/{id}", h.UpdateUser)
+	r.Post("/users/adduser", h.CreateUser)
+	r.Put("/users/{id}", h.UpdateUser)
 
 	log.Fatal(http.ListenAndServe(":8089", r))
 }
