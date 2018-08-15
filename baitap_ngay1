@@ -14,3 +14,7 @@
 
 - Ngày 2:
 + Tạo middleware cho các method get, update thông tin
+
+- Ngày 3:
++ Delete user
++ create, update, get post
