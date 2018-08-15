@@ -2,7 +2,6 @@ package user
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -15,14 +14,29 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-type UserHandler struct {
-	DB   *gorm.DB
-	User UserInterface
+type Handler struct {
+	Repository RepositoryInterface
 }
 
-func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func NewHandler(r *Repository) *Handler {
+	return &Handler{
+		Repository: r,
+	}
+}
+
+func ParseForm(r *http.Request, i interface{}) error {
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+	decoder := form.NewDecoder()
+	err = decoder.Decode(&i, r.Form)
+	return err
+}
+
+func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	user := User{}
-	request := UserRequest{}
+	request := CreateUserRequest{}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -43,6 +57,14 @@ func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	validate := validator.New()
+	err = validate.Struct(&request)
+	if err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+
 	password, err := bcrypt.GenerateFromPassword([]byte(request.Password), 14)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -54,7 +76,7 @@ func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user.Password = string(password)
 	user.FullName = request.FullName
 
-	err = u.User.Create(&user, u.DB)
+	err = h.Repository.CreateUser(&user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
@@ -78,7 +100,7 @@ func (u *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (u *UserHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user := User{}
 
 	idParam := chi.URLParam(r, "id")
@@ -88,11 +110,17 @@ func (u *UserHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid ID"})
 		return
 	}
-	err = user.Find(id, u.DB)
+	user, err = h.Repository.FindUser(map[string]interface{}{"id": id})
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		return
+		if err == gorm.ErrRecordNotFound {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+			return
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+			return
+		}
 	}
 	data, err := json.Marshal(&user)
 	if err != nil {
@@ -111,20 +139,13 @@ func (u *UserHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (u *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var user User
-	var request UserRequest
+	var request LoginUserRequest
 
-	err := r.ParseForm()
+	err := ParseForm(r, &request)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		return
-	}
-	decoder := form.NewDecoder()
-	err = decoder.Decode(&request, r.Form)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -137,13 +158,18 @@ func (u *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	find := u.DB.Where("username = ?", request.Username).First(&user)
-	if find.RecordNotFound() {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "No record"})
-		return
+	user, err = h.Repository.FindUser(map[string]interface{}{"username": request.Username})
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+			return
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+			return
+		}
 	}
-	fmt.Println(request.Password, user.Password)
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err == nil {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       user.ID,
@@ -165,16 +191,9 @@ func (u *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (u *UserHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var updateUser User
 	user := r.Context().Value("user").(User)
-
-	err := user.Find(user.ID, u.DB)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		return
-	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -195,7 +214,7 @@ func (u *UserHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid json"})
 		return
 	}
-	err = u.User.Update(&user, &updateUser, u.DB)
+	err = h.Repository.UpdateUser(&user, &updateUser)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
@@ -215,5 +234,134 @@ func (u *UserHandler) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(response)
+	return
+}
+func (h *Handler) GetPostList(w http.ResponseWriter, r *http.Request) {
+	posts, err := h.Repository.GetPosts(map[string]interface{}{})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+	json.NewEncoder(w).Encode(PostListResponse{Data: posts})
+	return
+}
+func (h *Handler) GetPosts(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(User)
+	posts, err := h.Repository.GetPosts(map[string]interface{}{"id_user": user.ID})
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+			return
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+			return
+		}
+	}
+	json.NewEncoder(w).Encode(PostListResponse{Data: posts})
+	return
+}
+
+func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(User)
+	request := CreatePostRequest{}
+	err := ParseForm(r, &request)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	post, err := h.Repository.CreatePost(&user, request.Content)
+	if err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+	json.NewEncoder(w).Encode(PostResponse{
+		ID:      post.ID,
+		IdUser:  post.IdUser,
+		Content: post.Content,
+	})
+	return
+}
+
+func (h *Handler) UpdatePost(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(User)
+	request := CreatePostRequest{}
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	post, err := h.Repository.FindPost(id)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	if user.ID != post.IdUser {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: "It's not yours"})
+		return
+	}
+
+	err = ParseForm(r, &request)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	post, err = h.Repository.UpdatePost(&post, request.Content)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+	json.NewEncoder(w).Encode(PostResponse{
+		ID:      post.ID,
+		Content: post.Content,
+		IdUser:  post.IdUser,
+	})
+	return
+}
+
+func (h *Handler) DeletePost(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(User)
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	post, err := h.Repository.FindPost(id)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	if user.ID != post.IdUser {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: "It's not yours"})
+		return
+	}
+
+	err = h.Repository.DeletePost(&post)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 	return
 }

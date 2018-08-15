@@ -11,16 +11,19 @@ import (
 func main() {
 	db := ConnectDB()
 	defer db.Close()
-
-	u := user.UserHandler{
-		DB:   db,
-		User: &user.User{},
-	}
+	repo := user.NewRepository(db)
+	h := user.NewHandler(repo)
 
 	r := chi.NewRouter()
-	r.Post("/user/login", u.LoginHandler)
-	r.Post("/user/register", u.RegisterHandler)
-	r.Get("/user/{id}", u.GetHandler)
-	r.Put("/user/update", user.Authentication(u.UpdateHandler))
+	r.Post("/user/login", h.LoginUser)
+	r.Post("/user/register", h.RegisterUser)
+	r.Get("/user/{id}", h.GetUser)
+	r.Put("/user/update", user.Authentication(h.UpdateUser))
+	r.Get("/posts", h.GetPostList)
+	r.Get("/user/posts", user.Authentication(h.GetPosts))
+	r.Post("/user/posts", user.Authentication(h.CreatePost))
+	r.Put("/user/posts/{id}", user.Authentication(h.UpdatePost))
+	r.Delete("/user/posts/{id}", user.Authentication(h.DeletePost))
+
 	log.Fatal(http.ListenAndServe(":1709", r))
 }
