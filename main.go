@@ -18,8 +18,9 @@ func main() {
 	}
 
 	r := chi.NewRouter()
+	r.Post("/user/login", u.LoginHandler)
 	r.Post("/user/register", u.RegisterHandler)
 	r.Get("/user/{id}", u.GetHandler)
-	r.Put("/user/{id}", u.UpdateHandler)
+	r.Put("/user/update", user.Authentication(u.UpdateHandler))
 	log.Fatal(http.ListenAndServe(":1709", r))
 }
