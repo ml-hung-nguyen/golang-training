@@ -1,7 +1,6 @@
 package user
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,10 +8,11 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
+	"github.com/jinzhu/gorm"
 )
 
 type Handler struct {
-	DB   *sql.DB
+	DB   *gorm.DB
 	User UserInterface
 }
 
@@ -76,16 +76,21 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user := h.User
+	var updateduser User
 	body, _ := ioutil.ReadAll(r.Body)
-	_ = json.Unmarshal(body, &user)
+	_ = json.Unmarshal(body, &updateduser)
 	userId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		fmt.Println(err)
 		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
 		return
 	}
-	fmt.Println(user)
-	err = user.Update(userId, h.DB)
+	err = user.Find(userId, h.DB)
+	if err != nil {
+		return
+	}
+	//fmt.Println(user)
+	err = user.Update(&updateduser, h.DB)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

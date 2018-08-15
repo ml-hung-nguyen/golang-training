@@ -1,9 +1,9 @@
 package user
 
 import (
-	"database/sql"
 	"fmt"
 
+	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 )
 
@@ -15,21 +15,18 @@ const (
 	dbname = "DBNAME"
 )
 
-func InitDB() *sql.DB {
+func InitDB() *gorm.DB {
 	config := configDB()
 	var err error
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		config[dbhost], config[dbport], config[dbuser],
 		config[dbpass], config[dbname])
-	db, err := sql.Open("postgres", psqlInfo)
+	db, err := gorm.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
 	}
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
+
 	fmt.Println("Success")
 	return db
 }
