@@ -7,25 +7,25 @@ import (
 )
 
 type User struct {
-	Id        int        `gorm:"id"`
-	Username  string     `gorm:"username"`
-	FullName  string     `gorm:"full_name"`
-	CreatedAt time.Time  `gorm:"created_at"`
-	UpdatedAt time.Time  `gorm:"updated_at"`
-	DeletedAt *time.Time `gorm:"deleted_at"`
+	Id        int    `gorm:"id" form:"-"`
+	Username  string `gorm:"username" form:"username"`
+	FullName  string `gorm:"full_name" form:"fullname"`
+	Password  string `gorm:"password" form:"password"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
 }
 
 type UserInterface interface {
-	Detail(id int, db *gorm.DB) error
-	Create(db *gorm.DB) error
-	Update(userUpdate User, db *gorm.DB) error
+	Detail(userR *User, db *gorm.DB) error
+	Create(userR *User, db *gorm.DB) error
+	Update(userR *User, db *gorm.DB) error
 }
 
 // Create create new user
-func (user *User) Create(db *gorm.DB) error {
-	user.Id = 0
-	if db.NewRecord(user) {
-		if err := db.Create(&user).Error; err != nil {
+func (user *User) Create(userR *User, db *gorm.DB) error {
+	if db.NewRecord(userR) {
+		if err := db.Create(&userR).Error; err != nil {
 			return err
 		}
 	}
@@ -33,9 +33,8 @@ func (user *User) Create(db *gorm.DB) error {
 }
 
 // Detail get info user
-func (user *User) Detail(id int, db *gorm.DB) error {
-	user.Id = 0
-	result := db.First(&user, id)
+func (user *User) Detail(userR *User, db *gorm.DB) error {
+	result := db.First(&userR)
 
 	if result.Error != nil {
 		return result.Error
@@ -45,7 +44,17 @@ func (user *User) Detail(id int, db *gorm.DB) error {
 }
 
 // Update update user
-func (user *User) Update(userUpdate User, db *gorm.DB) error {
-	db.Model(&user).Update(&userUpdate)
+func (user *User) Update(userR *User, db *gorm.DB) error {
+	if err := db.Model(&userR).Update(&userR).Error; err != nil {
+		return err
+	}
+
 	return nil
+}
+
+type UserResponse struct {
+	Id       int    `json:"id"`
+	Username string `json:"username"`
+	FullName string `json:"fullname"`
+	password string `json:"-"`
 }

@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi"
+	"github.com/go-playground/form"
 	"github.com/jinzhu/gorm"
 )
 
@@ -22,9 +22,10 @@ func (h *UserHandle) Detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := h.user
+	user := User{}
+	user.Id = id
 
-	err = user.Detail(id, h.db)
+	err = h.user.Detail(&user, h.db)
 	if err != nil {
 		if err.Error() == "record not found" {
 			respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
@@ -32,24 +33,45 @@ func (h *UserHandle) Detail(w http.ResponseWriter, r *http.Request) {
 			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 		}
 	} else {
-		respondwithJSON(w, http.StatusOK, user)
+		response := UserResponse{}
+		data, err := json.Marshal(&user)
+		if err != nil {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+		err = json.Unmarshal(data, &response)
+		if err != nil {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+		respondwithJSON(w, http.StatusOK, response)
 	}
 }
 
 func (h *UserHandle) Create(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	user := h.user
-	err = json.Unmarshal(body, &user)
+	err := r.ParseForm()
+	if err != nil {
+		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+	}
+	user := User{}
+
+	err = form.NewDecoder().Decode(&user, r.Form)
 	if err != nil {
 		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
-		return
 	}
 
-	err = user.Create(h.db)
+	err = h.user.Create(&user, h.db)
 	if err != nil {
 		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 	} else {
-		respondwithJSON(w, http.StatusOK, map[string]string{"message": "Create successfully"})
+		response := UserResponse{}
+		data, err := json.Marshal(&user)
+		if err != nil {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+		err = json.Unmarshal(data, &response)
+		if err != nil {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+		respondwithJSON(w, http.StatusOK, response)
 	}
 }
 
@@ -59,16 +81,14 @@ func (h *UserHandle) Update(w http.ResponseWriter, r *http.Request) {
 		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
-	user := h.user
-	var userUpdate User
-	err = json.Unmarshal(body, &userUpdate)
+	err = r.ParseForm()
 	if err != nil {
-		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
-		return
+		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 	}
+	user := User{}
+	user.Id = id
 
-	err = user.Detail(id, h.db)
+	err = h.user.Detail(&user, h.db)
 	if err != nil {
 		if err.Error() == "record not found" {
 			respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
@@ -77,10 +97,25 @@ func (h *UserHandle) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	err = user.Update(userUpdate, h.db)
+
+	err = form.NewDecoder().Decode(&user, r.Form)
+	if err != nil {
+		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+	}
+
+	err = h.user.Update(&user, h.db)
 	if err != nil {
 		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 	} else {
-		respondwithJSON(w, http.StatusOK, map[string]string{"message": "Update successfully"})
+		response := UserResponse{}
+		data, err := json.Marshal(&user)
+		if err != nil {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+		err = json.Unmarshal(data, &response)
+		if err != nil {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+		respondwithJSON(w, http.StatusOK, response)
 	}
 }
