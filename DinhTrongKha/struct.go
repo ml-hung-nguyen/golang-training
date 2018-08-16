@@ -2,8 +2,6 @@ package main
 
 import (
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
 
 type User struct {
@@ -16,45 +14,24 @@ type User struct {
 	DeletedAt *time.Time
 }
 
-type UserInterface interface {
-	Detail(userR *User, db *gorm.DB) error
-	Create(userR *User, db *gorm.DB) error
-	Update(userR *User, db *gorm.DB) error
-}
-
-// Create create new user
-func (user *User) Create(userR *User, db *gorm.DB) error {
-	if db.NewRecord(userR) {
-		if err := db.Create(&userR).Error; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Detail get info user
-func (user *User) Detail(userR *User, db *gorm.DB) error {
-	result := db.First(&userR)
-
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
-// Update update user
-func (user *User) Update(userR *User, db *gorm.DB) error {
-	if err := db.Model(&userR).Update(&userR).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
 type UserResponse struct {
-	Id       int    `json:"id"`
-	Username string `json:"username"`
-	FullName string `json:"fullname"`
+	Id       int    `json:"Id"`
+	Username string `json:"Username"`
+	FullName string `json:"FullName"`
 	password string `json:"-"`
+}
+
+type Post struct {
+	Id        int    `gorm:"id" form:"-"`
+	IdUser    int    `gorm:"id_user" form:"iduser"`
+	Content   string `gorm:"content" form:"content"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
+}
+
+type PostResponse struct {
+	Id      int    `json:"Id"`
+	IdUser  int    `json:"IdUser"`
+	Content string `json:"Content"`
 }

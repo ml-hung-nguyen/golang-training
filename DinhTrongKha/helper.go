@@ -14,3 +14,15 @@ func respondwithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.WriteHeader(code)
 	w.Write(response)
 }
+
+func tranDataJson(origin interface{}, response interface{}) error {
+	data, err := json.Marshal(&origin)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, &response)
+	if err != nil {
+		return err
+	}
+	return nil
+}

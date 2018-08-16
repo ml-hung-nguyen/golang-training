@@ -13,11 +13,16 @@ var db *gorm.DB
 var router *chi.Mux
 
 func routers() *chi.Mux {
-	h := UserHandle{db, &User{}}
+	h := Handle{&Repository{db}}
 
-	router.Get("/users/{id_user}", h.Detail)
-	router.Post("/users/register", h.Create)
-	router.Put("/users/update/{id_user}", h.Update)
+	router.Get("/users/{id_user}", h.DetailUser)
+	router.Post("/users/register", h.CreateUser)
+	router.Put("/users/update/{id_user}", h.UpdateUser)
+	router.Delete("/users/{id_user}", h.DeleteUser)
+
+	router.Get("/posts/{id_post}", h.DetailPost)
+	router.Post("/posts/create", h.CreatePost)
+	router.Put("/posts/update/{id_post}", h.UpdatePost)
 
 	return router
 }
