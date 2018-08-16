@@ -4,12 +4,53 @@ import (
 	"net/http"
 	"strconv"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/form"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Handle struct {
 	repo RepositoryInterface
+}
+
+func (h *Handle) LoginlUser(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		return
+	}
+
+	var user, userRequest User
+	err = form.NewDecoder().Decode(&userRequest, r.Form)
+	if err != nil {
+		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+	}
+
+	err = h.repo.DetailUser(&user, map[string]interface{}{"username": userRequest.Username})
+	if err != nil {
+		if err.Error() == "record not found" {
+			respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
+		} else {
+			respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+	}
+
+	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userRequest.Password)); err == nil {
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":       user.Id,
+			"username": user.Username,
+			"fullname": user.FullName,
+		})
+		tokenString, err := token.SignedString([]byte("secretcode"))
+		if err != nil {
+			respondwithJSON(w, http.StatusInternalServerError, err)
+			return
+		}
+		respondwithJSON(w, http.StatusOK, map[string]string{"Token": tokenString})
+	} else {
+		respondwithJSON(w, http.StatusUnauthorized, map[string]string{"message": "Unauthorize"})
+	}
 }
 
 func (h *Handle) DetailUser(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +63,7 @@ func (h *Handle) DetailUser(w http.ResponseWriter, r *http.Request) {
 	user := User{}
 	user.Id = id
 
-	err = h.repo.DetailUser(&user)
+	err = h.repo.DetailUser(&user, nil)
 	if err != nil {
 		if err.Error() == "record not found" {
 			respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
@@ -52,6 +93,12 @@ func (h *Handle) CreateUser(w http.ResponseWriter, r *http.Request) {
 		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 	}
 
+	password, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	if err != nil {
+		respondwithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+	}
+	user.Password = string(password)
+
 	err = h.repo.CreateUser(&user)
 	if err != nil {
 		respondwithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
@@ -79,7 +126,7 @@ func (h *Handle) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user := User{}
 	user.Id = id
 
-	err = h.repo.DetailUser(&user)
+	err = h.repo.DetailUser(&user, nil)
 	if err != nil {
 		if err.Error() == "record not found" {
 			respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
@@ -121,7 +168,7 @@ func (h *Handle) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	user := User{}
 	user.Id = id
 
-	err = h.repo.DetailUser(&user)
+	err = h.repo.DetailUser(&user, nil)
 	if err != nil {
 		if err.Error() == "record not found" {
 			respondwithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})

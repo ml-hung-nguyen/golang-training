@@ -7,7 +7,7 @@ type Repository struct {
 }
 
 type RepositoryInterface interface {
-	DetailUser(user *User) error
+	DetailUser(user *User, con interface{}) error
 	CreateUser(user *User) error
 	UpdateUser(user *User) error
 	DeleteUser(user *User) error
@@ -28,11 +28,15 @@ func (repo *Repository) CreateUser(user *User) error {
 }
 
 // DetailUser get info user
-func (repo *Repository) DetailUser(user *User) error {
-	result := repo.db.First(&user)
-
-	if result.Error != nil {
-		return result.Error
+func (repo *Repository) DetailUser(user *User, con interface{}) error {
+	if con != nil {
+		if err := repo.db.Where(con).First(&user).Error; err != nil {
+			return err
+		}
+	} else {
+		if err := repo.db.First(&user).Error; err != nil {
+			return err
+		}
 	}
 
 	return nil

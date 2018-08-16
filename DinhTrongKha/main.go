@@ -15,10 +15,11 @@ var router *chi.Mux
 func routers() *chi.Mux {
 	h := Handle{&Repository{db}}
 
-	router.Get("/users/{id_user}", h.DetailUser)
+	router.Get("/users/{id_user}", Authentication(h.DetailUser))
 	router.Post("/users/register", h.CreateUser)
-	router.Put("/users/update/{id_user}", h.UpdateUser)
+	router.Put("/users/update/{id_user}", Authentication(h.UpdateUser))
 	router.Delete("/users/{id_user}", h.DeleteUser)
+	router.Post("/login", h.LoginlUser)
 
 	router.Get("/posts/{id_post}", h.DetailPost)
 	router.Post("/posts/create", h.CreatePost)
