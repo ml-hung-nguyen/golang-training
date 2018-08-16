@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	db := ConnectDB()
+	db := user.ConnectDB()
 	defer db.Close()
 	repo := user.NewRepository(db)
 	h := user.NewHandler(repo)

@@ -57,8 +57,7 @@ func (r *Repository) FindPost(id int) (Post, error) {
 }
 
 func (r *Repository) UpdatePost(post *Post, content string) (Post, error) {
-	post.Content = content
-	err := r.DB.Save(&post).Error
+	err := r.DB.Model(&post).Updates(map[string]interface{}{"content": content}).Error
 	return *post, err
 }
 
