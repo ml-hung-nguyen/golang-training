@@ -1,7 +1,7 @@
 package main
 
 import (
-	"example_day1/golang-training/database"
+	"example_day1/golang-training/file"
 	"log"
 	"net/http"
 
@@ -9,13 +9,14 @@ import (
 )
 
 func main() {
-	db := database.Init()
+	db := file.Init()
 	defer db.Close()
-	h := database.Handle{DB: db}
+	repo := file.NewRepository(db)
+	h := file.NewHandler(repo)
 	r := chi.NewRouter()
 	r.Get("/user/{id}", h.ShowUser)
 	r.Post("/user/register", h.CreateUser)
 	r.Put("/user/{id}", h.UpdateUser)
 
-	log.Fatal(http.ListenAndServe(":8888", r))
+	log.Fatal(http.ListenAndServe(":8112", r))
 }
