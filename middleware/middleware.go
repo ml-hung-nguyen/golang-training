@@ -1,9 +1,11 @@
-package user
+package middleware
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	. "golang-training/common"
+	"golang-training/user"
 	"net/http"
 	"strings"
 
@@ -29,7 +31,7 @@ func Authentication(next http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 				if token.Valid {
-					var user User
+					var user user.User
 					claims, _ := token.Claims.(jwt.MapClaims)
 					mapstructure.Decode(claims, &user)
 					ctx := context.WithValue(r.Context(), "user", user)

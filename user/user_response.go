@@ -7,10 +7,6 @@ type UserResponse struct {
 	FullName string `json:"fullname"`
 }
 
-type ErrorResponse struct {
-	Message string `json:"message"`
-}
-
 type JwtToken struct {
 	Token string `json:"token"`
 }
