@@ -7,26 +7,23 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type Route struct {
-	mux *chi.Mux
-	db  *gorm.DB
+type Router struct {
+	Mux *chi.Mux
+	DB  *gorm.DB
 	uh  *user.Handler
 }
 
-//NewRoute func
-func NewRoute() *Route {
-	var r Route
-	r.db = Connect()
-	r.mux = chi.NewRouter()
-
-	ur := user.NewRepository(r.db)
+func NewRouter() *Router {
+	var r Router
+	r.DB = Connect()
+	r.Mux = chi.NewRouter()
+	ur := user.NewRepository(r.DB)
 	uc := user.NewUseCase(ur)
 	r.uh = user.NewHandler(uc)
 
-	r.mux.Post("/users/login", r.uh.LoginUser)
-	r.mux.Post("/users/register", r.uh.RegisterUser)
-	r.mux.Get("/users/{id}", r.uh.GetUser)
-	r.mux.Put("/users/update", user.Authentication(r.uh.UpdateUser))
-
+	r.Mux.Get("/users/{id}", r.uh.DetailUser)
+	r.Mux.Post("/users/register", r.uh.RegisterUser)
+	r.Mux.Post("/users/login", r.uh.Login)
+	r.Mux.Put("/users/update/{id}", user.Authentication(r.uh.UpdateUser))
 	return &r
 }

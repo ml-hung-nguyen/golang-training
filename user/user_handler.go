@@ -1,13 +1,13 @@
 package user
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"golang-training/helper"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi"
 	"github.com/go-playground/form"
+	"github.com/jinzhu/gorm"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -21,135 +21,131 @@ func NewHandler(uc *UseCase) *Handler {
 	}
 }
 
-func ParseForm(r *http.Request, i interface{}) error {
-	err := r.ParseForm()
+func (h *Handler) DetailUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		return err
+		helper.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		return
 	}
-	decoder := form.NewDecoder()
-	err = decoder.Decode(&i, r.Form)
-	return err
+	user, err := h.UseCase.GetUser(id)
+	if err != nil {
+		helper.RespondWithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
+		return
+	} else {
+		response := UserResponse{}
+		err = helper.TranDataJson(user, &response)
+		if err != nil {
+			helper.RespondWithJSON(w, http.StatusInternalServerError, response)
+			return
+		}
+		helper.RespondWithJSON(w, http.StatusOK, response)
+	}
 }
 
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	// user := User{}
 	request := CreateUserRequest{}
-
-	body, err := ioutil.ReadAll(r.Body)
+	// err := ParseForm(r, &request)
+	err := r.ParseForm()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		helper.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 		return
 	}
-	if len(body) < 1 {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "No body"})
+	err = form.NewDecoder().Decode(&request, r.Form)
+	if err != nil {
+		helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		return
+	}
+	// log.Println(request)
+	validate := validator.New()
+	err = validate.Struct(&request)
+	if err != nil {
+		helper.RespondWithJSON(w, http.StatusUnprocessableEntity, map[string]string{"message": err.Error()})
 		return
 	}
 
-	err = json.Unmarshal(body, &request)
+	user, err := h.UseCase.CreateUser(&request)
+	// log.Println(user)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		helper.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+	} else {
+		response := UserResponse{}
+		err = helper.TranDataJson(user, &response)
+		if err != nil {
+			helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+			return
+		}
+		helper.RespondWithJSON(w, http.StatusOK, response)
+	}
+}
+
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	var request LoginRequest
+	err := r.ParseForm()
+	if err != nil {
+		helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		return
+	}
+
+	err = form.NewDecoder().Decode(&request, r.Form)
+	if err != nil {
+		helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 		return
 	}
 
 	validate := validator.New()
 	err = validate.Struct(&request)
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		helper.RespondWithJSON(w, http.StatusUnprocessableEntity, map[string]string{"message": err.Error()})
 		return
 	}
-
-	response, status, err := h.UseCase.CreateUser(&request)
-	w.WriteHeader(status)
-
+	token, err := h.UseCase.Login(&request)
 	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		helper.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		return
+	} else {
+		helper.RespondWithJSON(w, http.StatusOK, token)
 		return
 	}
-
-	json.NewEncoder(w).Encode(response)
-	return
-}
-
-func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idParam)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid ID"})
-		return
-	}
-
-	response, status, err := h.UseCase.GetUser(id)
-	w.WriteHeader(status)
-	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		return
-	}
-
-	json.NewEncoder(w).Encode(response)
-	return
-}
-
-func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
-	var request LoginUserRequest
-
-	err := ParseForm(r, &request)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		return
-	}
-
-	validate := validator.New()
-	err = validate.Struct(&request)
-	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		return
-	}
-	token, status, err := h.UseCase.LoginUser(&request)
-	w.WriteHeader(status)
-	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
-		return
-	}
-	json.NewEncoder(w).Encode(token)
-	return
 }
 
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	var updateUser User
+	// var updateUser User
 	user := r.Context().Value("user").(User)
-
-	body, err := ioutil.ReadAll(r.Body)
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		helper.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 		return
 	}
-
-	if len(body) < 1 {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "No body"})
+	if user.Id != id {
+		helper.RespondWithJSON(w, http.StatusUnauthorized, map[string]string{"message": err.Error()})
 		return
 	}
-
-	err = json.Unmarshal(body, &updateUser)
+	err = r.ParseForm()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid json"})
+		helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 		return
 	}
-
-	response, status, err := h.UseCase.UpdateUser(&user, &updateUser)
-	w.WriteHeader(status)
+	request := UpdateUserRequest{}
+	request.Id = id
+	err = form.NewDecoder().Decode(&request, r.Form)
 	if err != nil {
-		json.NewEncoder(w).Encode(ErrorResponse{Message: err.Error()})
+		helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		return
 	}
-	json.NewEncoder(w).Encode(response)
-	return
+	user, err = h.UseCase.UpdateUser(&request)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			helper.RespondWithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
+		} else {
+			helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+	} else {
+		response := UserResponse{}
+		err = helper.TranDataJson(user, &response)
+		if err != nil {
+			helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+			return
+		}
+		helper.RespondWithJSON(w, http.StatusOK, response)
+	}
 }

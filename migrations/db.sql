@@ -1,5 +1,5 @@
-CREATE DATABASE go_training owner postgres encoding 'utf8';
-\c go_training;
+CREATE DATABASE test_db owner postgres encoding 'utf8';
+\c test_db;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,

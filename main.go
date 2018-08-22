@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	r := NewRoute()
-	log.Fatal(http.ListenAndServe(":8008", r.mux))
+	r := NewRouter()
+	log.Fatal(http.ListenAndServe(":8002", r.Mux))
 }
