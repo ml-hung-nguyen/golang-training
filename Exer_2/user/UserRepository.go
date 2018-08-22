@@ -1,8 +1,6 @@
 package user
 
 import (
-	"fmt"
-
 	"github.com/jinzhu/gorm"
 )
 
@@ -20,40 +18,29 @@ type UserRepositoryInterface interface {
 // DetailUser get info user
 func (repo *UserRepository) DetailUser(user *User, con interface{}) error {
 	if con != nil {
-		if err := repo.DB.Where(con).First(&user).Error; err != nil {
-			return err
-		}
-	} else {
-		if err := repo.DB.First(&user).Error; err != nil {
-			return err
-		}
+		err := repo.DB.Where(con).First(&user).Error
+		return err
 	}
-
-	return nil
+	err := repo.DB.First(&user).Error
+	return err
 }
 
 // CreateUser create new user
 func (repo *UserRepository) CreateUser(user *User) error {
+	var err error
 	if repo.DB.NewRecord(user) {
-		if err := repo.DB.Create(&user).Error; err != nil {
-			return err
-		}
+		err = repo.DB.Create(&user).Error
 	}
-	return nil
+	return err
 }
 
 // UpdateUser update user
 func (repo *UserRepository) UpdateUser(user *User) error {
-	fmt.Println("OK", user)
-	if err := repo.DB.Model(&user).Update(&user).Error; err != nil {
-		return err
-	}
-	return nil
+	err := repo.DB.Model(&user).Update(&user).Error
+	return err
 }
 
 func (repo *UserRepository) DeleteUser(user *User) error {
-	if err := repo.DB.Delete(&user).Error; err != nil {
-		return err
-	}
-	return nil
+	err := repo.DB.Delete(&user).Error
+	return err
 }

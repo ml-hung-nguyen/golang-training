@@ -48,10 +48,7 @@ func (uc *UserUseCase) DetailUserUC(id int) (User, error) {
 	user := User{}
 	user.Id = id
 	err = uc.UserRepo.DetailUser(&user, nil)
-	if err != nil {
-		return user, err
-	}
-	return user, nil
+	return user, err
 }
 
 func (uc *UserUseCase) CreateUserUC(userRequest UserCreateRequest) (User, error) {
@@ -65,11 +62,7 @@ func (uc *UserUseCase) CreateUserUC(userRequest UserCreateRequest) (User, error)
 	user.Password = string(password)
 
 	err = uc.UserRepo.CreateUser(&user)
-	if err != nil {
-		return user, err
-	}
-
-	return user, nil
+	return user, err
 }
 
 func (uc *UserUseCase) UpdateUserUC(userRequest *UserUpdateRequest) (User, error) {
@@ -95,11 +88,7 @@ func (uc *UserUseCase) UpdateUserUC(userRequest *UserUpdateRequest) (User, error
 	}
 
 	err = uc.UserRepo.UpdateUser(&user)
-	if err != nil {
-		return user, err
-	}
-
-	return user, nil
+	return user, err
 }
 
 func (uc *UserUseCase) DeleteUserUC(id int) (User, error) {
@@ -110,8 +99,5 @@ func (uc *UserUseCase) DeleteUserUC(id int) (User, error) {
 		return user, err
 	}
 	err = uc.UserRepo.DeleteUser(&user)
-	if err != nil {
-		return user, err
-	}
-	return user, nil
+	return user, err
 }
