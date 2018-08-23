@@ -19,14 +19,13 @@ func NewRouter() *Router {
 	r.db = ConnectDB()
 	r.mux = chi.NewRouter()
 
-	ur := user.NewRepository(r.db)
-	uc := user.NewUseCase(ur)
-	r.uh = user.NewHandler(uc)
-
-	r.mux.Post("/user/login", r.uh.LoginUser)
-	r.mux.Post("/user/register", r.uh.RegisterUser)
-	r.mux.Get("/user/{id}", r.uh.GetUser)
-	r.mux.Put("/user/update", middleware.Authentication(r.uh.UpdateUser))
+	r.uh = user.NewHandler(r.db)
+	r.mux.Route("/user", func(cr chi.Router) {
+		cr.Post("/login", r.uh.LoginUser)
+		cr.Post("/register", r.uh.RegisterUser)
+		cr.Get("/{id}", r.uh.GetUser)
+		cr.Put("/update", middleware.Authentication(r.uh.UpdateUser))
+	})
 
 	return &r
 }
