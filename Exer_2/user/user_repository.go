@@ -15,6 +15,12 @@ type UserRepositoryInterface interface {
 	DeleteUser(user *User) error
 }
 
+func NewUserRepo(db *gorm.DB) *UserRepository {
+	return &UserRepository{
+		DB: db,
+	}
+}
+
 // DetailUser get info user
 func (repo *UserRepository) DetailUser(user *User, con interface{}) error {
 	if con != nil {
@@ -28,9 +34,7 @@ func (repo *UserRepository) DetailUser(user *User, con interface{}) error {
 // CreateUser create new user
 func (repo *UserRepository) CreateUser(user *User) error {
 	var err error
-	if repo.DB.NewRecord(user) {
-		err = repo.DB.Create(&user).Error
-	}
+	err = repo.DB.Create(&user).Error
 	return err
 }
 

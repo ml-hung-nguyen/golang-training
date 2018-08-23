@@ -7,7 +7,7 @@ import (
 )
 
 // respondwithJSON write json response format
-func RespondwithJSON(w http.ResponseWriter, code int, payload interface{}) {
+func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
 	fmt.Println(payload)
 	w.Header().Set("Content-Type", "application/json")

@@ -16,7 +16,7 @@ func Authentication(next http.HandlerFunc) http.HandlerFunc {
 		author := r.Header.Get("Authorization")
 		if author != "" {
 			bearerToken := strings.Split(author, " ")
-			if len(bearerToken) == 2 && bearerToken[0] == "Bearer" {
+			if len(bearerToken) == 2 && strings.HasPrefix(author, "Bearer ") {
 				token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
 					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil, fmt.Errorf("Error")
@@ -24,7 +24,7 @@ func Authentication(next http.HandlerFunc) http.HandlerFunc {
 					return []byte("secretcode"), nil
 				})
 				if err != nil {
-					helper.RespondwithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
+					helper.RespondWithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
 					return
 				}
 				claims, ok := token.Claims.(jwt.MapClaims)
@@ -34,15 +34,15 @@ func Authentication(next http.HandlerFunc) http.HandlerFunc {
 					ctx := context.WithValue(r.Context(), "user", user)
 					next.ServeHTTP(w, r.WithContext(ctx))
 				} else {
-					helper.RespondwithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
+					helper.RespondWithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
 					return
 				}
 			} else {
-				helper.RespondwithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
+				helper.RespondWithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
 				return
 			}
 		} else {
-			helper.RespondwithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
+			helper.RespondWithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
 			return
 		}
 	})

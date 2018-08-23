@@ -15,20 +15,16 @@ func Routers(router *chi.Mux) *chi.Mux {
 	router.Use(middleware.Recoverer)
 	db = connect.NewConnect(db)
 
-	conRepo := connect.NewConRepo(db)
-	conUC := connect.NewConUC(conRepo)
-	conHandel := connect.NewConHandle(conUC)
+	userHandler := user.NewUserHandler(db)
 
-	userRepo := user.UserRepository{DB: db}
-	userUC := user.UserUseCase{&userRepo}
-	userHandel := user.UserHandle{&userUC}
+	router.Route("/user", func(r chi.Router) {
+		r.Get("/{id_user:[0-9]+}", userHandler.DetailUserHandler)
+		r.Put("/{id_user:[0-9]+}/update", user.Authentication(userHandler.UpdateUserHandler))
+		r.Delete("/{id_user:[0-9]+}", userHandler.DeleteUserHandler)
+	})
 
-	router.Get("/testdatabase", conHandel.ConnectHandle)
-	router.Get("/users/{id_user}", userHandel.DetailUserHandle)
-	router.Post("/users/register", userHandel.CreateUserHandle)
-	router.Put("/users/{id_user}/update", user.Authentication(userHandel.UpdateUserHandle))
-	router.Delete("/users/{id_user}", userHandel.DeleteUserHandle)
-	router.Post("/login", userHandel.LoginlUser)
+	router.Post("/register", userHandler.CreateUserHandler)
+	router.Post("/login", userHandler.LoginlUser)
 
 	return router
 }

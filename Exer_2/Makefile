@@ -1,38 +1,52 @@
-build:
-	sudo docker build -t sql:pg -f postgres.dockerfile .
-	sudo docker build -t golang:demo -f go.dockerfile .
+GO_IMAGE = golang:demo
+SQL_IMAGE = sql:pg
+GO_CONTAINER = golang
+SQL_CONTAINER = sql
 
-run: 
-	sudo docker run -d --name sql -p sql:pg
-	sudo docker run -d --name golang -v ~/go/src/example/Exer_2:/go/src/example/Exer_2 -p 8080:8080 --link sql:localhost golang:demo
+build: buildsql buildgo
 
-stop:
-	sudo docker stop sql
-	sudo docker stop golang
+run: runsql rungo
 
-restart:
-	sudo docker restart sql
-	sudo docker restart golang
+stop: stopsql stopgo
 
-rm:
-	sudo docker rm sql
-	sudo docker rm golang
+restart: restartsql restartgo
 
-rmi:
-	sudo docker rmi sql:pg
-	sudo docker rmi golang:demo
+rm: rmsql rmgo
+
+rmi:  rmisql rmigo
+
+buildgo:
+	sudo docker build -t $(GO_IMAGE) -f go.dockerfile .
 
 rungo: 
-	sudo docker run -d --name golang -v ~/go/src/example/Exer_2:/go/src/example/Exer_2 -p 8080:8080 --link sql:localhost golang:demo
+	sudo docker run -d --name $(GO_CONTAINER) -v $(shell pwd):/$(shell pwd | cut -d'/' --complement -s -f1,2,3) -p 8080:8080 --link $(SQL_CONTAINER):localhost $(GO_IMAGE)
 
 stopgo:
-	sudo docker stop golang
+	sudo docker stop $(GO_CONTAINER)
 
 restartgo:
-	sudo docker restart golang
+	sudo docker restart $(GO_CONTAINER)
 
 rmgo:
-	sudo docker rm golang
+	sudo docker rm $(GO_CONTAINER)
 
 rmigo:
-	sudo docker rmi golang:demo
+	sudo docker rmi $(GO_IMAGE)
+
+buildsql:
+	sudo docker build -t $(SQL_IMAGE) -f postgres.dockerfile .
+
+runsql: 
+	sudo docker run -d --name $(SQL_CONTAINER) $(SQL_IMAGE)
+
+stopsql:
+	sudo docker stop $(SQL_CONTAINER)
+
+restartsql:
+	sudo docker restart $(SQL_CONTAINER)
+
+rmsql:
+	sudo docker rm $(SQL_CONTAINER)
+
+rmisql:
+	sudo docker rmi $(SQL_IMAGE)
