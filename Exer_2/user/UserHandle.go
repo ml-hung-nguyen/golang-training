@@ -1,8 +1,8 @@
 package user
 
 import (
-	"example/Exer_2/helper"
-	"example/Exer_2/model"
+	"example/Exer_1/golang-training/Exer_2/helper"
+	"example/Exer_1/golang-training/Exer_2/model"
 	"net/http"
 	"strconv"
 
@@ -22,7 +22,7 @@ func (h *UserHandle) LoginlUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var userRequest User
+	var userRequest UserLoginRequest
 	err = form.NewDecoder().Decode(&userRequest, r.Form)
 	if err != nil {
 		helper.RespondwithJSON(w, http.StatusInternalServerError, model.MessageResponse{Message: err.Error()})

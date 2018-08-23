@@ -5,10 +5,10 @@ import (
 )
 
 type User struct {
-	Id        int    `form:"-"`
-	Username  string `gorm:"username" form:"username"`
-	FullName  string `gorm:"full_name" form:"-"`
-	Password  string `gorm:"password" form:"password"`
+	Id        int    `gorm:"id;not null;primary_key"`
+	Username  string `gorm:"username;not null;unique"`
+	FullName  string `gorm:"full_name"`
+	Password  string `gorm:"password"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time

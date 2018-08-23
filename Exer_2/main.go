@@ -1,7 +1,7 @@
 package main
 
 import (
-	"example/Exer_2/routes"
+	"example/Exer_1/golang-training/Exer_2/routes"
 	"net/http"
 
 	"github.com/go-chi/chi"

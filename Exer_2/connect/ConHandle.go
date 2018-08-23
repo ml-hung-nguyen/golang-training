@@ -2,7 +2,7 @@ package connect
 
 import (
 	"encoding/json"
-	"example/Exer_2/model"
+	"example/Exer_1/golang-training/Exer_2/model"
 	"net/http"
 )
 

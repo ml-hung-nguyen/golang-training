@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"example/Exer_2/connect"
-	"example/Exer_2/user"
+	"example/Exer_1/golang-training/Exer_2/connect"
+	"example/Exer_1/golang-training/Exer_2/user"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"

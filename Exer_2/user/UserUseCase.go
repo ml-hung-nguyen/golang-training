@@ -12,14 +12,14 @@ type UserUseCase struct {
 }
 
 type UserUseCaseInterface interface {
-	AuthenUser(userRequest User) (string, error)
+	AuthenUser(userRequest UserLoginRequest) (string, error)
 	DetailUserUC(id int) (User, error)
 	CreateUserUC(userRequest UserCreateRequest) (User, error)
 	UpdateUserUC(userRequest *UserUpdateRequest) (User, error)
 	DeleteUserUC(id int) (User, error)
 }
 
-func (uc *UserUseCase) AuthenUser(userRequest User) (string, error) {
+func (uc *UserUseCase) AuthenUser(userRequest UserLoginRequest) (string, error) {
 	var err error
 	var user User
 

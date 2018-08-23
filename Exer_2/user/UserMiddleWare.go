@@ -2,8 +2,8 @@ package user
 
 import (
 	"context"
-	"example/Exer_2/helper"
-	"example/Exer_2/model"
+	"example/Exer_1/golang-training/Exer_2/helper"
+	"example/Exer_1/golang-training/Exer_2/model"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,7 +16,7 @@ func Authentication(next http.HandlerFunc) http.HandlerFunc {
 		author := r.Header.Get("Authorization")
 		if author != "" {
 			bearerToken := strings.Split(author, " ")
-			if len(bearerToken) == 2 {
+			if len(bearerToken) == 2 && bearerToken[0] == "Bearer" {
 				token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
 					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil, fmt.Errorf("Error")
@@ -37,6 +37,9 @@ func Authentication(next http.HandlerFunc) http.HandlerFunc {
 					helper.RespondwithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
 					return
 				}
+			} else {
+				helper.RespondwithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
+				return
 			}
 		} else {
 			helper.RespondwithJSON(w, http.StatusUnauthorized, model.MessageResponse{Message: "Unauthorize"})
