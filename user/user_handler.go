@@ -15,7 +15,9 @@ type Handler struct {
 	UseCase UseCaseInterface
 }
 
-func NewHandler(uc *UseCase) *Handler {
+func NewHandler(db *gorm.DB) *Handler {
+	ur := NewRepository(db)
+	uc := NewUseCase(ur)
 	return &Handler{
 		UseCase: uc,
 	}
@@ -31,15 +33,15 @@ func (h *Handler) DetailUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		helper.RespondWithJSON(w, http.StatusNotFound, map[string]string{"message": err.Error()})
 		return
-	} else {
-		response := UserResponse{}
-		err = helper.TranDataJson(user, &response)
-		if err != nil {
-			helper.RespondWithJSON(w, http.StatusInternalServerError, response)
-			return
-		}
-		helper.RespondWithJSON(w, http.StatusOK, response)
 	}
+	response := UserResponse{}
+	err = helper.TranDataJson(user, &response)
+	if err != nil {
+		helper.RespondWithJSON(w, http.StatusInternalServerError, response)
+		return
+	}
+	helper.RespondWithJSON(w, http.StatusOK, response)
+	return
 }
 
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
@@ -67,15 +69,17 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	// log.Println(user)
 	if err != nil {
 		helper.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
-	} else {
-		response := UserResponse{}
-		err = helper.TranDataJson(user, &response)
-		if err != nil {
-			helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
-			return
-		}
-		helper.RespondWithJSON(w, http.StatusOK, response)
+		return
 	}
+	response := UserResponse{}
+	err = helper.TranDataJson(user, &response)
+	if err != nil {
+		helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		return
+	}
+	helper.RespondWithJSON(w, http.StatusOK, response)
+	return
+
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -139,13 +143,13 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		} else {
 			helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
 		}
-	} else {
-		response := UserResponse{}
-		err = helper.TranDataJson(user, &response)
-		if err != nil {
-			helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
-			return
-		}
-		helper.RespondWithJSON(w, http.StatusOK, response)
 	}
+	response := UserResponse{}
+	err = helper.TranDataJson(user, &response)
+	if err != nil {
+		helper.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		return
+	}
+	helper.RespondWithJSON(w, http.StatusOK, response)
+	return
 }

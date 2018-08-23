@@ -11,7 +11,7 @@ const (
 	dbhost = "localhost"
 	dbport = "5432"
 	dbuser = "postgres"
-	dbpass = "1234"
+	dbpass = "root"
 	dbname = "test_db"
 )
 

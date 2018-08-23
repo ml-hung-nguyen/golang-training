@@ -10,20 +10,21 @@ import (
 type Router struct {
 	Mux *chi.Mux
 	DB  *gorm.DB
-	uh  *user.Handler
+	// uh  *user.Handler
 }
 
 func NewRouter() *Router {
 	var r Router
 	r.DB = Connect()
 	r.Mux = chi.NewRouter()
-	ur := user.NewRepository(r.DB)
-	uc := user.NewUseCase(ur)
-	r.uh = user.NewHandler(uc)
-
-	r.Mux.Get("/users/{id}", r.uh.DetailUser)
-	r.Mux.Post("/users/register", r.uh.RegisterUser)
-	r.Mux.Post("/users/login", r.uh.Login)
-	r.Mux.Put("/users/update/{id}", user.Authentication(r.uh.UpdateUser))
+	// ur := user.NewRepository(r.DB)
+	// uc := user.NewUseCase(ur)
+	uh := user.NewHandler(r.DB)
+	r.Mux.Route("/users", func(u chi.Router) {
+		u.Get("/{id:[0-9]+}", uh.DetailUser)
+		u.Post("/register", uh.RegisterUser)
+		u.Post("/login", uh.Login)
+		u.Put("/update/{id}", user.Authentication(uh.UpdateUser))
+	})
 	return &r
 }

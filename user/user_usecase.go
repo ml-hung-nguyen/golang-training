@@ -1,7 +1,7 @@
 package user
 
 import (
-	"encoding/json"
+	"golang-training/helper"
 	"log"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -35,11 +35,7 @@ func (uc *UseCase) GetUser(id int) (UserResponse, error) {
 			return response, err
 		}
 	}
-	data, err := json.Marshal(&user)
-	if err != nil {
-		return response, err
-	}
-	err = json.Unmarshal(data, &response)
+	err = helper.TranDataJson(user, &response)
 	if err != nil {
 		return response, err
 	}
@@ -62,11 +58,7 @@ func (uc *UseCase) CreateUser(ur *CreateUserRequest) (UserResponse, error) {
 	if err != nil {
 		return response, err
 	}
-	data, err := json.Marshal(&user)
-	if err != nil {
-		return response, err
-	}
-	err = json.Unmarshal(data, &response)
+	err = helper.TranDataJson(user, &response)
 	if err != nil {
 		return response, err
 	}
@@ -105,17 +97,8 @@ func (uc *UseCase) Login(ur *LoginRequest) (JwtToken, error) {
 func (uc *UseCase) UpdateUser(ur *UpdateUserRequest) (User, error) {
 	user := User{}
 	user.Id = ur.Id
-	id, err := uc.Repository.FindUser(map[string]interface{}{"id": ur.Id})
-	log.Println(id)
-	if err != nil {
-		return user, err
-	}
-	if ur.Username != "" {
-		user.Username = ur.Username
-	}
-	if ur.FullName != "" {
-		user.FullName = ur.FullName
-	}
+	user.Username = ur.Username
+	user.FullName = ur.FullName
 	if ur.Password != "" {
 		password, err := bcrypt.GenerateFromPassword([]byte(ur.Password), 14)
 		if err != nil {
@@ -123,7 +106,7 @@ func (uc *UseCase) UpdateUser(ur *UpdateUserRequest) (User, error) {
 		}
 		user.Password = string(password)
 	}
-	err = uc.Repository.UpdateUser(&user)
+	err := uc.Repository.UpdateUser(&user)
 	if err != nil {
 		return user, err
 	}
