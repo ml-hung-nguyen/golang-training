@@ -1,15 +1,15 @@
 package user
 
 import (
+	"baitapgo_ngay1/golang-training/common"
 	"baitapgo_ngay1/golang-training/model"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi"
-	"github.com/go-playground/form"
+	"github.com/jinzhu/gorm"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -17,19 +17,9 @@ type Handler struct {
 	UseCase UseCaseInterface
 }
 
-func ParseForm(r *http.Request, i interface{}) error {
-	err := r.ParseForm()
-	if err != nil {
-		return err
-	}
-	decoder := form.NewDecoder()
-	err = decoder.Decode(&i, r.Form)
-	return err
-}
-
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	request := CreateUserRequest{}
-
+	err := common.ParseForm(r, &request)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -57,8 +47,8 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, status, err := h.UseCase.CreateUser(&request)
-	w.WriteHeader(status)
+	response, err := h.UseCase.CreateUser(&request)
+	//w.WriteHeader(status)
 
 	if err != nil {
 		json.NewEncoder(w).Encode(model.MessageResponse{Message: err.Error()})
@@ -78,10 +68,10 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, status, err := h.UseCase.GetUser(id)
-	w.WriteHeader(status)
+	response, err := h.UseCase.GetUser(id)
+	//w.WriteHeader(status)
 	if err != nil {
-		json.NewEncoder(w).Encode(model.MessageResponse{Message: err.Error()})
+		json.NewEncoder(w).Encode(model.MessageResponse{Message: "err.Error()"})
 		return
 	}
 
@@ -92,7 +82,7 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var request LoginUserRequest
 
-	err := ParseForm(r, &request)
+	err := common.ParseForm(r, &request)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(model.MessageResponse{Message: err.Error()})
@@ -106,8 +96,8 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(model.MessageResponse{Message: err.Error()})
 		return
 	}
-	token, status, err := h.UseCase.LoginUser(&request)
-	w.WriteHeader(status)
+	token, err := h.UseCase.LoginUser(&request)
+	//w.WriteHeader(status)
 	if err != nil {
 		json.NewEncoder(w).Encode(model.MessageResponse{Message: err.Error()})
 		return
@@ -118,13 +108,15 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var updateUser User
+	var request UpdateUserRequest
 	//fmt.Println("Handler")
-	user, ok := r.Context().Value("user").(User)
+	//ok := r.Context().Value("user").(User)
 	// user = user.(User)
-	if !ok {
-		fmt.Println(ok)
-		return
-	}
+	// if !ok {
+	// 	fmt.Println(ok)
+	// 	return
+	// }
+	err := common.ParseForm(r, &request)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -145,8 +137,8 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, status, err := h.UseCase.UpdateUser(&user, &updateUser)
-	w.WriteHeader(status)
+	response, err := h.UseCase.UpdateUser(&updateUser)
+	//w.WriteHeader(status)
 	if err != nil {
 		json.NewEncoder(w).Encode(model.MessageResponse{Message: err.Error()})
 	}
@@ -154,7 +146,9 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func NewHandler(uc *UseCase) *Handler {
+func NewHandler(db *gorm.DB) *Handler {
+	ur := NewRepository(db)
+	uc := NewUseCase(ur)
 	return &Handler{
 		UseCase: uc,
 	}

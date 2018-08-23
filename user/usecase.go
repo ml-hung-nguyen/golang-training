@@ -1,10 +1,8 @@
 package user
 
 import (
-	"baitapgo_ngay1/golang-training/model"
 	"encoding/json"
 	"errors"
-	"net/http"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
@@ -16,17 +14,17 @@ type UseCase struct {
 }
 
 type UseCaseInterface interface {
-	CreateUser(ur *CreateUserRequest) (User, int, error)
-	GetUser(id int) (User, int, error)
-	LoginUser(ur *LoginUserRequest) (model.JwtToken, int, error)
-	UpdateUser(user *User, updatedUser *User) (User, int, error)
+	CreateUser(ur *CreateUserRequest) (UserResponse, error)
+	GetUser(id int) (UserResponse, error)
+	LoginUser(ur *LoginUserRequest) (JwtToken, error)
+	UpdateUser(updatedUser *User) (UserResponse, error)
 }
 
-func (uc *UseCase) CreateUser(ur *CreateUserRequest) (User, int, error) {
-	u := User{}
+func (uc *UseCase) CreateUser(ur *CreateUserRequest) (UserResponse, error) {
+	reponse := UserResponse{}
 	password, err := bcrypt.GenerateFromPassword([]byte(ur.Password), 14)
 	if err != nil {
-		return u, http.StatusInternalServerError, err
+		return reponse, err
 	}
 	var user User
 	user.Username = ur.Username
@@ -35,49 +33,49 @@ func (uc *UseCase) CreateUser(ur *CreateUserRequest) (User, int, error) {
 
 	err = uc.Repository.CreateUser(&user)
 	if err != nil {
-		return u, http.StatusUnprocessableEntity, err
+		return reponse, err
 	}
 
 	data, err := json.Marshal(&user)
 	if err != nil {
-		return u, http.StatusInternalServerError, err
+		return reponse, err
 	}
-	err = json.Unmarshal(data, &u)
+	err = json.Unmarshal(data, &reponse)
 	if err != nil {
-		return u, http.StatusInternalServerError, err
+		return reponse, err
 	}
-	return u, http.StatusOK, nil
+	return reponse, nil
 }
 
-func (uc *UseCase) GetUser(id int) (User, int, error) {
-	var reponsitory Repository
+func (uc *UseCase) GetUser(id int) (UserResponse, error) {
+	var reponse UserResponse
 	user, err := uc.Repository.FindUser(map[string]interface{}{"id": id})
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return user, http.StatusUnprocessableEntity, err
+			return reponse, err
 		} else {
-			return user, http.StatusInternalServerError, err
+			return reponse, err
 		}
 	}
 	data, err := json.Marshal(&user)
 	if err != nil {
-		return user, http.StatusInternalServerError, err
+		return reponse, err
 	}
-	err = json.Unmarshal(data, &reponsitory)
+	err = json.Unmarshal(data, &reponse)
 	if err != nil {
-		return user, http.StatusInternalServerError, err
+		return reponse, err
 	}
-	return user, http.StatusOK, nil
+	return reponse, nil
 }
 
-func (uc *UseCase) LoginUser(ur *LoginUserRequest) (model.JwtToken, int, error) {
-	var jwtToken model.JwtToken
+func (uc *UseCase) LoginUser(ur *LoginUserRequest) (JwtToken, error) {
+	var jwtToken JwtToken
 	user, err := uc.Repository.FindUser(map[string]interface{}{"username": ur.Username})
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return jwtToken, http.StatusUnprocessableEntity, err
+			return jwtToken, err
 		} else {
-			return jwtToken, http.StatusInternalServerError, err
+			return jwtToken, err
 		}
 	}
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(ur.Password)); err == nil {
@@ -88,31 +86,31 @@ func (uc *UseCase) LoginUser(ur *LoginUserRequest) (model.JwtToken, int, error) 
 		})
 		tokenString, err := token.SignedString([]byte("somesecretcode"))
 		if err != nil {
-			return jwtToken, http.StatusInternalServerError, err
+			return jwtToken, err
 		}
 		jwtToken.Token = tokenString
-		return jwtToken, http.StatusOK, err
+		return jwtToken, err
 	} else {
-		return jwtToken, http.StatusUnauthorized, errors.New("Unauthorize")
+		return jwtToken, errors.New("Unauthorize")
 	}
 }
 
-func (uc *UseCase) UpdateUser(user *User, updatedUser *User) (User, int, error) {
-	var u User
-	err := uc.Repository.UpdateUser(user, updatedUser)
+func (uc *UseCase) UpdateUser(updatedUser *User) (UserResponse, error) {
+	var reponse UserResponse
+	user, err := uc.Repository.UpdateUser(updatedUser)
 	if err != nil {
-		return u, http.StatusInternalServerError, err
+		return reponse, err
 	}
 	data, err := json.Marshal(&user)
 	if err != nil {
-		return u, http.StatusInternalServerError, err
+		return reponse, err
 	}
 
-	err = json.Unmarshal(data, &u)
+	err = json.Unmarshal(data, &reponse)
 	if err != nil {
-		return u, http.StatusInternalServerError, err
+		return reponse, err
 	}
-	return u, http.StatusOK, nil
+	return reponse, nil
 }
 
 func NewUseCase(r *Repository) *UseCase {

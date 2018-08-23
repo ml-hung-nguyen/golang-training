@@ -15,13 +15,6 @@ const (
 	dbname = "DBNAME"
 )
 
-type ConReponsitory struct {
-	DB *gorm.DB
-}
-type ConReponseInterface interface {
-	InitDB() *gorm.DB
-}
-
 func InitDB() *gorm.DB {
 	config := configDB()
 	var err error

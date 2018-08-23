@@ -11,7 +11,6 @@ import (
 type Router struct {
 	mux *chi.Mux
 	db  *gorm.DB
-	uh  *user.Handler
 }
 
 func NewRouter() *Router {
@@ -20,14 +19,14 @@ func NewRouter() *Router {
 	route.db = InitDB()
 	route.mux = chi.NewRouter()
 
-	ur := user.NewRepository(route.db)
-	uc := user.NewUseCase(ur)
-	route.uh = user.NewHandler(uc)
+	uh := user.NewHandler(route.db)
 
-	route.mux.Post("/user/login", route.uh.LoginUser)
-	route.mux.Post("/user/create", route.uh.RegisterUser)
-	route.mux.Get("/user/{id}", route.uh.GetUser)
-	route.mux.Put("/user/update", middleware.Authentication(route.uh.UpdateUser))
+	route.mux.Route("/user", func(r chi.Router) {
+		r.Post("/login", uh.LoginUser)
+		r.Post("/create", uh.RegisterUser)
+		r.Get("/{id}", uh.GetUser)
+		r.Put("/update", middleware.Authentication(uh.UpdateUser))
+	})
 
 	return &route
 }
