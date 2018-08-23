@@ -3,7 +3,6 @@ package user
 import (
 	"encoding/json"
 	. "golang-training/common"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -27,32 +26,28 @@ func NewHandler(db *gorm.DB) *Handler {
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	request := CreateUserRequest{}
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := ParseJson(r)
 	if err != nil {
-		JsonResponse(w, http.StatusBadRequest, ErrorResponse{Message: err.Error()})
-		return
-	}
-	if len(body) < 1 {
-		JsonResponse(w, http.StatusBadRequest, ErrorResponse{Message: "No body"})
+		JsonResponse(w, http.StatusBadRequest, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 
 	err = json.Unmarshal(body, &request)
 	if err != nil {
-		JsonResponse(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		JsonResponse(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 
 	validate := validator.New()
 	err = validate.Struct(&request)
 	if err != nil {
-		JsonResponse(w, http.StatusUnprocessableEntity, ErrorResponse{Message: err.Error()})
+		JsonResponse(w, http.StatusUnprocessableEntity, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 
 	response, status, err := h.UseCase.CreateUser(&request)
 	if err != nil {
-		JsonResponse(w, status, ErrorResponse{Message: err.Error()})
+		JsonResponse(w, status, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 	JsonResponse(w, status, response)
@@ -69,7 +64,7 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	response, status, err := h.UseCase.GetUser(id)
 	if err != nil {
-		JsonResponse(w, status, ErrorResponse{Message: err.Error()})
+		JsonResponse(w, status, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 	JsonResponse(w, status, response)
@@ -81,19 +76,19 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	err := ParseForm(r, &request)
 	if err != nil {
-		JsonResponse(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		JsonResponse(w, http.StatusInternalServerError, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 
 	validate := validator.New()
 	err = validate.Struct(&request)
 	if err != nil {
-		JsonResponse(w, http.StatusUnprocessableEntity, ErrorResponse{Message: err.Error()})
+		JsonResponse(w, http.StatusUnprocessableEntity, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 	token, status, err := h.UseCase.LoginUser(&request)
 	if err != nil {
-		JsonResponse(w, status, ErrorResponse{Message: err.Error()})
+		JsonResponse(w, status, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 	JsonResponse(w, status, token)
@@ -104,14 +99,9 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var updateUser User
 	user := r.Context().Value("user").(User)
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := ParseJson(r)
 	if err != nil {
-		JsonResponse(w, http.StatusBadRequest, ErrorResponse{Message: err.Error()})
-		return
-	}
-
-	if len(body) < 1 {
-		JsonResponse(w, http.StatusBadRequest, ErrorResponse{Message: "No body"})
+		JsonResponse(w, http.StatusBadRequest, ErrorResponse{Message: err.Error(), Errors: err})
 		return
 	}
 
@@ -123,7 +113,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	response, status, err := h.UseCase.UpdateUser(&user, &updateUser)
 	if err != nil {
-		JsonResponse(w, status, ErrorResponse{Message: err.Error()})
+		JsonResponse(w, status, ErrorResponse{Message: err.Error(), Errors: err})
 	}
 	JsonResponse(w, status, response)
 	return

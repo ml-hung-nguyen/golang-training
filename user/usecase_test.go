@@ -55,12 +55,13 @@ func TestUseCaseCreateUserFail(t *testing.T) {
 	}
 	_, status, err := uc.CreateUser(&request)
 	assert.Error(t, err)
-	assert.Equal(t, http.StatusUnprocessableEntity, status)
+	assert.Equal(t, http.StatusInternalServerError, status)
 }
 
 func TestUseCaseGetUser(t *testing.T) {
 	uc := user.UseCase{
 		Repository: &RepositoryMock{
+			User:   user.User{},
 			Errors: nil,
 		},
 	}
@@ -95,6 +96,9 @@ func TestUseCaseLoginUser(t *testing.T) {
 		Repository: &RepositoryMock{
 			Errors:     nil,
 			Conditions: map[string]interface{}{"password": string(hash)},
+			User: user.User{
+				Password: string(hash),
+			},
 		},
 	}
 	request := user.LoginUserRequest{Username: "test", Password: "abc"}

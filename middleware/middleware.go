@@ -16,7 +16,7 @@ import (
 func Authentication(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorization := r.Header.Get("Authorization")
-		if authorization != "" {
+		if authorization != "" && strings.HasPrefix(authorization, "Bearer ") {
 			bearerToken := strings.Split(authorization, " ")
 			if len(bearerToken) == 2 {
 				token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
@@ -25,12 +25,7 @@ func Authentication(next http.HandlerFunc) http.HandlerFunc {
 					}
 					return []byte("somesecretcode"), nil
 				})
-				if err != nil {
-					w.WriteHeader(http.StatusUnauthorized)
-					json.NewEncoder(w).Encode(ErrorResponse{Message: "Unauthorize"})
-					return
-				}
-				if token.Valid {
+				if err == nil && token.Valid {
 					var user user.User
 					claims, _ := token.Claims.(jwt.MapClaims)
 					mapstructure.Decode(claims, &user)

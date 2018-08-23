@@ -34,7 +34,7 @@ func (uc *UseCase) CreateUser(ur *CreateUserRequest) (UserResponse, int, error) 
 
 	err = uc.Repository.CreateUser(&user)
 	if err != nil {
-		return response, http.StatusUnprocessableEntity, err
+		return response, http.StatusInternalServerError, err
 	}
 
 	data, err := json.Marshal(&user)
@@ -98,7 +98,8 @@ func (uc *UseCase) LoginUser(ur *LoginUserRequest) (JwtToken, int, error) {
 
 func (uc *UseCase) UpdateUser(user *User, updatedUser *User) (UserResponse, int, error) {
 	var response UserResponse
-	err := uc.Repository.UpdateUser(user, updatedUser)
+	updatedUser.ID = user.ID
+	err := uc.Repository.UpdateUser(updatedUser)
 	if err != nil {
 		return response, http.StatusInternalServerError, err
 	}

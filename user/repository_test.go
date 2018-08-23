@@ -1,7 +1,6 @@
 package user_test
 
 import (
-	"fmt"
 	user "golang-training/user"
 	"log"
 	"testing"
@@ -15,6 +14,7 @@ import (
 type RepositoryMock struct {
 	DB         *gorm.DB
 	Errors     error
+	User       user.User
 	Conditions map[string]interface{}
 }
 
@@ -35,20 +35,14 @@ func newDB() (sqlmock.Sqlmock, *gorm.DB) {
 }
 
 func (rm *RepositoryMock) FindUser(conditions map[string]interface{}) (user.User, error) {
-	fmt.Println("mock")
-	conditions = rm.Conditions
-	if password, ok := conditions["password"]; ok {
-		fmt.Println(password)
-		return user.User{Password: password.(string)}, rm.Errors
-	}
-	return user.User{}, rm.Errors
+	return rm.User, rm.Errors
 }
 
 func (rm *RepositoryMock) CreateUser(user *user.User) error {
 	return rm.Errors
 }
 
-func (rm *RepositoryMock) UpdateUser(user *user.User, updatedUser *user.User) error {
+func (rm *RepositoryMock) UpdateUser(updatedUser *user.User) error {
 	return rm.Errors
 }
 
@@ -76,10 +70,11 @@ func TestCreateUser(t *testing.T) {
 	defer db.Close()
 	repo := user.NewRepository(db)
 	// mock.ExpectQuery("^INSERT").WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectExec("^INSERT").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO `users` \\(`username`,`password`,`full_name`(.+)\\)(.+)").WithArgs("test", "test", "test", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(1, 1))
 	err := repo.CreateUser(&user.User{
 		Username: "test",
 		Password: "test",
+		FullName: "test",
 	})
 	assert.NoError(t, err)
 }
@@ -90,10 +85,8 @@ func TestUpdateUser(t *testing.T) {
 	repo := user.NewRepository(db)
 	mock.ExpectExec("^UPDATE").WillReturnResult(sqlmock.NewResult(1, 1))
 	err := repo.UpdateUser(&user.User{
+		ID:       1,
 		FullName: "update",
-	}, &user.User{
-		Username: "a",
-		Password: "a",
 	})
 	assert.NoError(t, err)
 }

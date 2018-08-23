@@ -6,13 +6,9 @@ run:
 	sleep 5
 	sudo docker run -i -t -d -v ~/go/src/golang-training:/go/src/golang-training --name golang --link pgdb:db -p 1709:1709 golang:demo
 start:
-	sudo docker start pgdb
-	sudo docker start golang
+	sudo docker start pgdb golang
 restart:
-	sudo docker restart pgdb
-	sudo docker restart golang
+	sudo docker restart pgdb golang
 remove:
-	sudo docker stop pgdb golang
-	sudo docker rm pgdb
-	sudo docker rm golang
+	sudo docker rm pgdb golang -f
 	sudo docker rmi golang:demo postgres:demo

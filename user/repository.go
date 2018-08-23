@@ -7,7 +7,7 @@ import (
 type RepositoryInterface interface {
 	FindUser(conditions map[string]interface{}) (User, error)
 	CreateUser(user *User) error
-	UpdateUser(user *User, updatedUser *User) error
+	UpdateUser(updatedUser *User) error
 }
 
 type Repository struct {
@@ -25,8 +25,8 @@ func (r *Repository) CreateUser(user *User) error {
 	return err
 }
 
-func (r *Repository) UpdateUser(user *User, updatedUser *User) error {
-	err := r.DB.Model(&user).Updates(&updatedUser).Error
+func (r *Repository) UpdateUser(updatedUser *User) error {
+	err := r.DB.Model(&User{}).Updates(&updatedUser).Error
 	return err
 }
 
