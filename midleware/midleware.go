@@ -15,16 +15,16 @@ import (
 func Authentication(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorization := r.Header.Get("Authorization")
-		if authorization != "" {
+		if authorization != "" || !strings.HasPrefix(authorization, "Bearer ") {
 			bearerToken := strings.Split(authorization, " ")
-			if len(bearerToken) == 2 {
+			if len(bearerToken) == 2 && bearerToken[0] == "Bearer" {
 				token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
 					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil, fmt.Errorf("Error")
 					}
 					return []byte("somesecretcode"), nil
 				})
-				if err != nil {
+				if err != nil || !token.Valid {
 					w.WriteHeader(http.StatusUnauthorized)
 					json.NewEncoder(w).Encode(user.ErrorResponse{Message: "Unauthorize"})
 					return

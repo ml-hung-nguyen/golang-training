@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-playground/form"
+	"github.com/jinzhu/gorm"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -14,9 +15,11 @@ type Handler struct {
 	usecase UseCaseInterface
 }
 
-func NewHandler(u *UseCase) *Handler {
+func NewHandler(db *gorm.DB) *Handler {
+	repo := NewRepository(db)
+	uc := NewUseCase(repo)
 	return &Handler{
-		usecase: u,
+		usecase: uc,
 	}
 }
 
